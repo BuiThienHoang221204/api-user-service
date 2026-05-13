@@ -86,19 +86,82 @@ $ pnpm run test:e2e
 $ pnpm run test:cov
 ```
 
-## Deployment (AWS EC2)
+## Deployment (AWS EC2 - Step by Step)
 
-### Docker Deployment (Recommended)
+Đây là hướng dẫn chi tiết quá trình triển khai thực tế trên AWS EC2 bằng Docker mà Hoàng đã thực hiện.
 
-This project includes a `Dockerfile` and `docker-compose.yml` for easy containerized deployment.
+### Bước 1: Chuẩn bị máy chủ EC2
+1. Kết nối SSH vào server:
+   ```bash
+   ssh -i "users-service-key.pem" ubuntu@13.239.122.251
+   ```
+2. Cập nhật hệ thống và cài đặt Docker, Git:
+   ```bash
+   sudo apt update
+   sudo apt install -y docker.io docker-compose git
+   ```
+3. Cấu hình quyền chạy Docker cho user:
+   ```bash
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   sudo usermod -aG docker ubuntu
+   newgrp docker
+   ```
 
-1. Install Docker and Docker Compose on your EC2 instance.
-2. Clone the repository.
-3. Run the following command:
+### Bước 2: Triển khai mã nguồn
+1. Clone dự án từ GitHub:
+   ```bash
+   git clone https://github.com/BuiThienHoang221204/api-user-service.git
+   cd api-user-service
+   ```
+2. Tạo và cấu hình file môi trường `.env`:
+   ```bash
+   nano .env
+   ```
+   *Dán nội dung cấu hình sau vào (lưu ý DB_HOST đặt là tên service db trong docker-compose):*
+   ```env
+   PORT=3001
+   DB_HOST=user-db
+   DB_PORT=3306
+   DB_USERNAME=root
+   DB_PASSWORD=sapassword
+   DB_DATABASE=user_service_db
+   ```
+   *(Nhấn Ctrl+O -> Enter -> Ctrl+X để lưu và thoát)*
+
+### Bước 3: Khởi chạy ứng dụng
+Chạy lệnh sau để build image và khởi động các container:
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
-This will start cả User Service và MariaDB container.
+
+### Bước 4: Kiểm tra và Quản lý
+- **Xem danh sách container**: `docker ps` (Phải thấy `user-service-app` và `user-service-db` đang Up).
+- **Xem logs ứng dụng**: `docker compose logs -f user-service`
+- **Dừng ứng dụng**: `docker compose down`
+
+---
+
+## CI/CD với GitHub Actions
+
+Dự án đã được cấu hình tự động hóa quy trình triển khai. Mỗi khi bạn `push` code lên nhánh `main`, GitHub Actions sẽ tự động SSH vào EC2 và cập nhật bản mới nhất.
+
+### 🛠 Cấu hình cần thiết trên GitHub:
+Để quy trình này hoạt động, bạn cần vào repo trên GitHub: **Settings > Secrets and variables > Actions** và thêm các biến sau:
+
+1.  `EC2_HOST`: Địa chỉ IP của EC2 (Ví dụ: `13.239.122.251`)
+2.  `EC2_USERNAME`: Thường là `ubuntu`
+3.  `EC2_SSH_KEY`: Nội dung của file `users-service-key.pem` (Mở file bằng Notepad, copy toàn bộ nội dung bao gồm cả dòng BEGIN và END).
+
+### 🔄 Quy trình tự động:
+1.  Bạn code xong và chạy: `git add .`, `git commit -m "...", `git push origin main`.
+2.  GitHub Actions sẽ tự kích hoạt (xem trong tab **Actions**).
+3.  Nó sẽ tự động:
+    - Kết nối vào EC2.
+    - Chạy `git pull` để lấy code mới nhất.
+    - Chạy `docker compose up -d --build` để cập nhật ứng dụng mà không làm gián đoạn hệ thống.
+
+---
 
 
 ## Resources
