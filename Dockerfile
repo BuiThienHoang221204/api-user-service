@@ -18,6 +18,9 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --quiet --tries=1 --spider http://localhost:3001/ || exit 1
+
 EXPOSE 3001
 
 CMD ["node", "dist/main"]
