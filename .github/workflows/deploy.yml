@@ -88,15 +88,16 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           message: |
-            ${{ contains(needs.*.result, 'failure') && 'Thất bại ❌' || 'Thành công ✅' }}
+            ${{ contains(needs.*.result, 'failure') && 'Failure ❌' || 'Success ✅' }}
 
             🚀 CI/CD Pipeline: api-user-service
 
-            📌 Nhánh: ${{ github.ref_name }}
-            👤 Người commit: 
-              ${{ github.actor }}
+            🔎 Where branch: ${{ github.ref_name }}
+
+            🔎 Who commit: 
+            - ${{ github.actor }}
 
             📝 Changes:
-              ${{ github.event.head_commit.message }}
+            - ${{ github.event.head_commit.message }}
 
             🔗 Pipeline: [View Pipeline](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
